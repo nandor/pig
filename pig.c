@@ -28,62 +28,60 @@ THE SOFTWARE.
 #include "pig.h"
 #include "rasterizer.h"
 
-pig *
+pig_t *
 pig_init(puint16_t width, puint16_t height)
 {
-  pig * p;
+  pig_t * p;
+  size_t buffer_size;
 
-  if (!(p = (pig*)malloc(sizeof(pig))))
+  if (!(p = (pig_t*)malloc(sizeof(pig_t))))
   {
     return NULL;
   }
 
+  // Initialise settings
   p->width = width;
   p->height = height;
-  p->cbuffer = (puint8_t*)malloc(p->width * p->height * sizeof(puint8_t) * 4);
-  p->dbuffer = (float*)malloc(p->width * p->height * sizeof(float));
-  memset(p->cbuffer, 0, p->width * p->height * sizeof(puint8_t) * 4);
-  memset(p->dbuffer, 0, p->width * p->height * sizeof(float));
+  p->mode = RM_COLOR;
+  p->tex = NULL;
+
+  // Initialise the framebuffer
+  buffer_size = p->width * p->height * sizeof(pixel_t);
+  p->fbuffer = (pixel_t*)malloc(buffer_size);
+  memset(p->fbuffer, 0, buffer_size);
 
   return p;
 }
 
 void
-pig_free(pig * p)
+pig_free(pig_t * p)
 {
   if (!p) {
     return;
   }
 
-  if (p->cbuffer) {
-    free(p->cbuffer);
-    p->cbuffer = NULL;
-  }
-
-  if (p->dbuffer) {
-    free(p->dbuffer);
-    p->dbuffer = NULL;
+  if (p->fbuffer) {
+    free(p->fbuffer);
+    p->fbuffer = NULL;
   }
 }
 
 void
-pig_triangle(pig * p, float * verts, puint32_t count)
+pig_triangle(pig_t * p, vertex_t * v, puint32_t count)
 {
-  vec * arr;
-
-  arr = (vec*)verts;
   for (puint32_t i = 0; i < count; ++i) {
-    pig_raster_triangle(p, &arr[i * 3], &arr[i * 3 + 1], &arr[i * 3 + 2]);
+    pig_raster_triangle(p, &v[i * 3 + 0], &v[i * 3 + 1], &v[i * 3 + 2]);
   }
 }
 
 void
-pig_show(pig * p)
+pig_show(pig_t * p)
 {
   FILE * fout;
   png_structp png_ptr;
   png_infop info_ptr;
   png_bytep row;
+  pixel_t * pix;
 
   if (!(fout = fopen("pig.png", "wb")))
   {
@@ -115,9 +113,10 @@ pig_show(pig * p)
   {
     for (puint16_t j = 0; j < p->width; ++j)
     {
-      row[j * 3 + 0] = p->cbuffer[((i * p->width + j) << 2) + 0] * 255.0f;
-      row[j * 3 + 1] = p->cbuffer[((i * p->width + j) << 2) + 1] * 255.0f;
-      row[j * 3 + 2] = p->cbuffer[((i * p->width + j) << 2) + 2] * 255.0f;
+      pix = p->fbuffer + (i * p->width + j);
+      row[j * 3 + 0] = pix->r * 255.0f;
+      row[j * 3 + 1] = pix->g * 255.0f;
+      row[j * 3 + 2] = pix->b * 255.0f;
     }
 
     png_write_row(png_ptr, row);

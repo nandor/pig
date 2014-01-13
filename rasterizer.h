@@ -26,6 +26,6 @@ THE SOFTWARE.
 
 #include "pig.h"
 
-void pig_raster_triangle(pig *, vec *, vec *, vec *);
+void pig_raster_triangle(pig_t *, vertex_t *, vertex_t *, vertex_t *);
 
 #endif /*__PIG_RASTERIZER_H__*/

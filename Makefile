@@ -1,4 +1,4 @@
-# Makefile for pig
+# Makefile for pig_t
 
 CC=gcc
 CFLAGS=-c -pedantic -Wall -Wextra -std=c99

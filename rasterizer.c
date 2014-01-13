@@ -23,20 +23,20 @@ THE SOFTWARE.
 *******************************************************************************/
 #include <stdio.h>
 #include <math.h>
+#include <emmintrin.h>
 #include "rasterizer.h"
 
 typedef struct
 {
-  pint16_t x;
-  pint16_t y;
+  /* Window coordinates */
+  pint16_t x, y;
+  /* Depth in [-1, 1] range */
   float z;
+  /* Vertex color */
+  float r, g, b;
+  /* Texture coordinates */
+  float u, v;
 } frag_t;
-
-static inline int
-abs(int a)
-{
-  return a > 0 ? a : (-a);
-}
 
 static inline int
 min(int a, int b)
@@ -50,10 +50,13 @@ max(int a, int b)
   return a > b ? a : b;
 }
 
+/**
+ * Emits a single fragment
+ */
 static inline void
-emit_fragment(pig * p, frag_t * f)
+emit_fragment(pig_t * p, frag_t * f)
 {
-  puint8_t * px;
+  pixel_t * px;
 
   if (f->x < 0 || p->width < f->x ||
       f->y < 0 || p->height < f->y ||
@@ -62,17 +65,17 @@ emit_fragment(pig * p, frag_t * f)
     return;
   }
 
-  px = p->cbuffer + ((f->y * p->width) + f->x) * 4;
-  px[0] = 128;
-  px[1] = 128;
-  px[2] = 128;
+  px = p->fbuffer + ((f->y * p->width) + f->x);
+  px->r = f->r;
+  px->g = f->g;
+  px->b = f->b;
 }
 
 /**
  * Bresenham's line algorithm
  */
 static void
-emit_line(pig * p, frag_t * p0, frag_t * p1)
+emit_line(pig_t * p, frag_t * p0, frag_t * p1)
 {
   int dx, dy, sx, sy, err, e;
   frag_t f;
@@ -121,7 +124,7 @@ orient(frag_t * a, frag_t * b, frag_t * c)
  * Triangle rasterization
  */
 static void
-emit_triangle(pig * p, frag_t * a, frag_t * b, frag_t * c)
+emit_triangle(pig_t * p, frag_t * a, frag_t * b, frag_t * c)
 {
   int minx = max(min(a->x, min(b->x, c->x)), 0);
   int miny = max(min(a->y, min(b->y, c->y)), 0);
@@ -145,25 +148,39 @@ emit_triangle(pig * p, frag_t * a, frag_t * b, frag_t * c)
   }
 }
 
-void
-pig_raster_triangle(pig * p, vec * a, vec * b, vec * c)
+/**
+ * Computes the window-space coordinate of a vertex
+ * Returns a non-zero value if the vertex is not clipped
+ */
+static inline void
+transform_vertex(pig_t * p, frag_t * f, vertex_t * a)
 {
-  vec x[3];
+  vec x, tmp;
+
+  x.x = a->x; x.y = a->y; x.z = a->z; x.w = 1.0f;
+
+  vec_mul(&tmp, &x, p->m_mvp);
+  tmp.x /= tmp.w;
+  tmp.y /= tmp.w;
+  tmp.z /= tmp.w;
+
+  f->x = p->width * (tmp.x + 1.0f) / 2;
+  f->y = p->height * (tmp.y + 1.0f) / 2;
+  f->z = tmp.z;
+  f->r = a->r;
+  f->g = a->g;
+  f->b = a->b;
+  f->u = a->u;
+  f->v = a->v;
+}
+
+void
+pig_raster_triangle(pig_t * p, vertex_t * a, vertex_t * b, vertex_t * c)
+{
   frag_t f[3];
 
-  vec_mul(x + 0, a, p->m_mvp);
-  vec_mul(x + 1, b, p->m_mvp);
-  vec_mul(x + 2, c, p->m_mvp);
-
-  for (register int i = 0; i < 3; ++i) {
-    x[i].x /= x[i].w;
-    x[i].y /= x[i].w;
-    x[i].z /= x[i].w;
-
-    f[i].x = p->width * (x[i].x + 1.0f) / 2;
-    f[i].y = p->height * (x[i].y + 1.0f) / 2;
-    f[i].z = (x[i].z + 1.0) / 2.0;
-  }
-
+  transform_vertex(p, f + 0, a);
+  transform_vertex(p, f + 1, b);
+  transform_vertex(p, f + 2, c);
   emit_triangle(p, f + 0, f + 1, f + 2);
 }

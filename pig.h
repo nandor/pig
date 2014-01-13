@@ -27,18 +27,71 @@ THE SOFTWARE.
 #include "types.h"
 #include "vecmath.h"
 
+/* Renderer settings */
+typedef enum
+{
+  /* Fill only with vertex color */
+  RM_COLOR = (1 << 0),
+  /* Fill only with texture data */
+  RM_TEXTURE = (1 << 1),
+  /* Lambert Shading */
+  RM_LAMBERT = (1 << 2),
+  /* Phong Shading */
+  RM_PHON = (1 << 3)
+} rendermode_t;
+
+/* Texture information */
 typedef struct
 {
+  /* Width of the texture */
   puint16_t width;
+  /* Height of the texture */
   puint16_t height;
-  puint8_t * cbuffer;
-  float * dbuffer;
-  mat m_mvp;
-} pig;
+  /* Texture data */
+  puint8_t * data;
+} texture_t;
 
-pig * pig_init(puint16_t, puint16_t);
-void pig_triangle(pig *, float *, puint32_t);
-void pig_show(pig *);
-void pig_free(pig *);
+/* Vertex data */
+typedef struct
+{
+  /* Vertex position */
+  float x, y, z;
+  /* Color */
+  float r, g, b;
+  /* Texture coordinate */
+  float u, v;
+} vertex_t;
+
+/* Framebuffer pixel */
+typedef struct
+{
+  puint8_t r;
+  puint8_t g;
+  puint8_t b;
+  puint8_t a;
+  float depth;
+} __attribute__ ((__packed__)) pixel_t;
+
+/* Renderer state */
+typedef struct
+{
+  /* Viewport width */
+  puint16_t width;
+  /* Viewport height */
+  puint16_t height;
+  /* Framebuffer */
+  pixel_t * fbuffer;
+  /* MPV matrix */
+  mat m_mvp;
+  /* Current texture */
+  texture_t * tex;
+  /* Texture rendering mode */
+  puint32_t mode;
+} pig_t;
+
+pig_t * pig_init(puint16_t, puint16_t);
+void pig_triangle(pig_t *, vertex_t *, puint32_t);
+void pig_show(pig_t *);
+void pig_free(pig_t *);
 
 #endif /*__PIG_PIG_H__*/
