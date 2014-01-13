@@ -146,7 +146,7 @@ emit_triangle(pig_t * p, frag_t * a, frag_t * b, frag_t * c)
 
   f.r = 1.0f;
   f.g = 1.0f;
-  f.g = 1.0f;
+  f.b = 1.0f;
 
   for (f.y = miny; f.y <= maxy; ++f.y)
   {
@@ -159,12 +159,14 @@ emit_triangle(pig_t * p, frag_t * a, frag_t * b, frag_t * c)
 
       if (w0 >= 0 && w1 >= 0 && w2 >= 0)
       {
-        /* Interpolate attributes */
+        /* Compute weights */
         dx = (f.x - c->x) * bcy - (f.y - c->y) * bcx;
         dy = acx * (f.y - c->y) - acy * (f.x - c->x);
         dz = (a->x - f.x) * (b->y - f.y) - (a->y - f.y) * (b->x - f.x);
         dx /= det; dy /= det; dz /= det;
 
+        /* Interpolate attributes */
+        f.z = a->z * dx + b->z * dy + c->z * dz;
         f.r = a->r * dx + b->r * dy + c->r * dz;
         f.g = a->g * dx + b->g * dy + c->g * dz;
         f.b = a->b * dx + b->b * dy + c->b * dz;
@@ -195,6 +197,7 @@ transform_vertex(pig_t * p, frag_t * f, vertex_t * a)
   /* Clipping, return 0 if the vertex is outside the view volume */
   clipped = -tmp.w <= tmp.x && tmp.x <= tmp.w &&
             -tmp.w <= tmp.y && tmp.y <= tmp.w &&
+            -tmp.w <= tmp.z && tmp.z <= tmp.w &&
             0 < tmp.w;
 
   /* Get the normalized device coordinates */

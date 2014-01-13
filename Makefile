@@ -1,7 +1,7 @@
 # Makefile for pig_t
 
 CC=gcc
-CFLAGS=-c -pedantic -Wall -Wextra -std=c99
+CFLAGS=-c -pedantic -Wall -Wextra -std=c99 -march=nocona -O2
 LDFLAGS=-lc -lm -lpng
 SOURCES=main.c pig.c vecmath.c rasterizer.c
 OBJECTS=$(SOURCES:.c=.o)

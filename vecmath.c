@@ -24,6 +24,8 @@ THE SOFTWARE.
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <xmmintrin.h>
+#include <pmmintrin.h>
 #include "vecmath.h"
 
 void
@@ -89,27 +91,31 @@ mat_view(mat m, vec * eye, vec * at, vec * up)
 }
 
 void
-mat_mul(mat x, mat y, mat z)
+mat_mul(mat d, mat a, mat b)
 {
-  x[ 0] = y[0] * z[ 0] + y[4] * z[ 1] + y[ 8] * z[ 2] + y[12] * z[ 3];
-  x[ 1] = y[0] * z[ 4] + y[4] * z[ 5] + y[ 8] * z[ 6] + y[12] * z[ 7];
-  x[ 2] = y[0] * z[ 8] + y[4] * z[ 9] + y[ 8] * z[10] + y[12] * z[11];
-  x[ 3] = y[0] * z[12] + y[4] * z[13] + y[ 8] * z[14] + y[12] * z[15];
+  __m128 acc, al, bl;
+  register int i;
 
-  x[ 4] = y[1] * z[ 0] + y[5] * z[ 1] + y[ 9] * z[ 2] + y[13] * z[ 3];
-  x[ 5] = y[1] * z[ 4] + y[5] * z[ 5] + y[ 9] * z[ 6] + y[13] * z[ 7];
-  x[ 6] = y[1] * z[ 8] + y[5] * z[ 9] + y[ 9] * z[10] + y[13] * z[11];
-  x[ 7] = y[1] * z[12] + y[5] * z[13] + y[ 9] * z[14] + y[13] * z[15];
+  for (i = 0; i < 16; i += 4)
+  {
+    al = _mm_loadu_ps(a);
+    bl = _mm_set_ps1(b[i]);
+    acc = _mm_mul_ps(al, bl);
 
-  x[ 8] = y[2] * z[ 0] + y[6] * z[ 1] + y[10] * z[ 2] + y[14] * z[ 3];
-  x[ 9] = y[2] * z[ 4] + y[6] * z[ 5] + y[10] * z[ 6] + y[14] * z[ 7];
-  x[10] = y[2] * z[ 8] + y[6] * z[ 9] + y[10] * z[10] + y[14] * z[11];
-  x[11] = y[2] * z[12] + y[6] * z[13] + y[10] * z[14] + y[14] * z[15];
+    al = _mm_loadu_ps(a + 4);
+    bl = _mm_set_ps1(b[i + 1]);
+    acc = _mm_add_ps(acc, _mm_mul_ps(al, bl));
 
-  x[12] = y[3] * z[ 0] + y[7] * z[ 1] + y[11] * z[ 2] + y[15] * z[ 3];
-  x[13] = y[3] * z[ 4] + y[7] * z[ 5] + y[11] * z[ 6] + y[15] * z[ 7];
-  x[14] = y[3] * z[ 8] + y[7] * z[ 9] + y[11] * z[10] + y[15] * z[11];
-  x[15] = y[3] * z[12] + y[7] * z[13] + y[11] * z[14] + y[15] * z[15];
+    al = _mm_loadu_ps(a + 8);
+    bl = _mm_set_ps1(b[i + 2]);
+    acc = _mm_add_ps(acc, _mm_mul_ps(al, bl));
+
+    al = _mm_loadu_ps(a + 12);
+    bl = _mm_set_ps1(b[i + 3]);
+    acc = _mm_add_ps(acc, _mm_mul_ps(al, bl));
+
+    _mm_storeu_ps(d + i, acc);
+  }
 }
 
 void
@@ -122,44 +128,101 @@ mat_dump(mat m)
 }
 
 void
-vec_mul(vec * dest, vec * a, mat b)
+vec_mul(vec * d, vec * a, mat b)
 {
-  dest->x = b[0] * a->x + b[4] * a->y + b[ 8] * a->z + b[12] * a->w;
-  dest->y = b[1] * a->x + b[5] * a->y + b[ 9] * a->z + b[13] * a->w;
-  dest->z = b[2] * a->x + b[6] * a->y + b[10] * a->z + b[14] * a->w;
-  dest->w = b[3] * a->x + b[7] * a->y + b[11] * a->z + b[15] * a->w;
+  __m128 al, bl, acc;
+
+  al = _mm_set_ps1(a->x);
+  bl = _mm_loadu_ps(b);
+  acc = _mm_mul_ps(al, bl);
+
+  al = _mm_set_ps1(a->y);
+  bl = _mm_loadu_ps(b + 4);
+  acc = _mm_add_ps(acc, _mm_mul_ps(al, bl));
+
+  al = _mm_set_ps1(a->z);
+  bl = _mm_loadu_ps(b + 8);
+  acc = _mm_add_ps(acc, _mm_mul_ps(al, bl));
+
+  al = _mm_set_ps1(a->w);
+  bl = _mm_loadu_ps(b + 12);
+  acc = _mm_add_ps(acc, _mm_mul_ps(al, bl));
+
+  _mm_storeu_ps((float*)d, acc);
 }
 
 void
-vec_cross(vec * dest, vec * a, vec * b)
+vec_cross(vec * d, vec * a, vec * b)
 {
-  dest->x = a->y * b->z - a->z * b->y;
-  dest->y = a->z * b->x - a->x * b->z;
-  dest->z = a->x * b->y - a->y * b->x;
-  dest->w = 1.0;
+  __m128 al, bl, r;
+
+  al = _mm_loadu_ps((float*)a);
+  bl = _mm_loadu_ps((float*)b);
+
+  r =_mm_sub_ps(
+    _mm_mul_ps(
+      _mm_shuffle_ps(al, al, _MM_SHUFFLE(3, 0, 2, 1)),
+      _mm_shuffle_ps(bl, bl, _MM_SHUFFLE(3, 1, 0, 2))
+    ),
+    _mm_mul_ps(
+      _mm_shuffle_ps(al, al, _MM_SHUFFLE(3, 1, 0, 2)),
+      _mm_shuffle_ps(bl, bl, _MM_SHUFFLE(3, 0, 2, 1))
+    )
+  );
+
+  _mm_storeu_ps((float*)d, r);
+  d->w = 1.0f;
 }
 
 float
 vec_dot(vec * a, vec * b)
 {
-  return a->x * b->x + a->y * b->y + a->z * b->z;
+  __m128 al, bl;
+  union {
+    float v[4];
+    __m128 vec;
+  } r;
+
+  al = _mm_loadu_ps((float*)a);
+  bl = _mm_loadu_ps((float*)b);
+
+  r.vec = _mm_mul_ps(al, bl);
+  r.vec = _mm_hadd_ps(r.vec, r.vec);
+  r.vec = _mm_hadd_ps(r.vec, r.vec);
+
+  return r.v[0];
 }
 
 float vec_len(vec * a)
 {
-  return sqrt(vec_dot(a, a));
+  __m128 al;
+  union {
+    float v[4];
+    __m128 vec;
+  } r;
+
+  al = _mm_loadu_ps((float*)a);
+  r.vec = _mm_mul_ps(al, al);
+  r.vec = _mm_hadd_ps(r.vec, r.vec);
+  r.vec = _mm_hadd_ps(r.vec, r.vec);
+  r.vec = _mm_sqrt_ps(r.vec);
+
+  return r.v[0];
 }
 
 void
 vec_norm(vec * a)
 {
-  float l;
+  __m128 al, tmp;
 
-  l = sqrt(a->x * a->x + a->y * a->y + a->z * a->z);
-  if (fabsf(l) >= 0.001)
+  al = _mm_loadu_ps((float*)a);
+  tmp = _mm_mul_ps(al, al);
+  tmp = _mm_hadd_ps(tmp, tmp);
+  tmp = _mm_hadd_ps(tmp, tmp);
+  tmp = _mm_rsqrt_ps(tmp);
+
+  if (_mm_movemask_ps(_mm_cmpgt_ps(tmp, _mm_setzero_ps())) == 0xF)
   {
-    a->x /= l;
-    a->y /= l;
-    a->z /= l;
+    _mm_storeu_ps((float*)a, _mm_mul_ps(al, tmp));
   }
 }
