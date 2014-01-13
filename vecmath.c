@@ -42,14 +42,14 @@ mat_proj(mat m, float fov, float a, float n, float f)
   float t, d;
 
   t = tan (fov / 360 * PI);
-  d = n - f;
+  d = f - n;
 
   memset(m, 0, sizeof(mat));
   m[0] = 1.0f / (a * t);
   m[5] = 1.0f / t;
-  m[10] = (f + n) / d;
+  m[10] = -(f + n) / d;
   m[11] = -1.0f;
-  m[14] = 2.0f * n * f / d;
+  m[14] = -2.0f * n * f / d;
 }
 
 void
@@ -62,30 +62,29 @@ mat_view(mat m, vec * eye, vec * at, vec * up)
   z.z = at->z - eye->z;
   vec_norm(&z);
 
-  vec_cross(&x, up, &z);
+  vec_cross(&x, &z, up);
   vec_norm(&x);
 
-  vec_cross(&y, &z, &x);
-  vec_norm(&y);
+  vec_cross(&y, &x, &z);
 
   m[0] = x.x;
   m[1] = y.x;
-  m[2] = z.x;
+  m[2] = -z.x;
   m[3] = 0.0f;
 
   m[4] = x.y;
   m[5] = y.y;
-  m[6] = z.y;
+  m[6] = -z.y;
   m[7] = 0.0f;
 
   m[8] = x.z;
   m[9] = y.z;
-  m[10] = z.z;
+  m[10] = -z.z;
   m[11] = 0.0f;
 
   m[12] = -vec_dot(&x, eye);
   m[13] = -vec_dot(&y, eye);
-  m[14] = -vec_dot(&z, eye);
+  m[14] = vec_dot(&z, eye);
   m[15] = 1.0f;
 }
 
@@ -125,10 +124,10 @@ mat_dump(mat m)
 void
 vec_mul(vec * dest, vec * a, mat b)
 {
-  dest->x = b[ 0] * a->x + b[ 1] * a->y + b[ 2] * a->z + b[ 3] * a->w;
-  dest->y = b[ 4] * a->x + b[ 5] * a->y + b[ 6] * a->z + b[ 7] * a->w;
-  dest->z = b[ 8] * a->x + b[ 9] * a->y + b[10] * a->z + b[11] * a->w;
-  dest->w = b[12] * a->x + b[13] * a->y + b[14] * a->z + b[15] * a->w;
+  dest->x = b[0] * a->x + b[4] * a->y + b[ 8] * a->z + b[12] * a->w;
+  dest->y = b[1] * a->x + b[5] * a->y + b[ 9] * a->z + b[13] * a->w;
+  dest->z = b[2] * a->x + b[6] * a->y + b[10] * a->z + b[14] * a->w;
+  dest->w = b[3] * a->x + b[7] * a->y + b[11] * a->z + b[15] * a->w;
 }
 
 void

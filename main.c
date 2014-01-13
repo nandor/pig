@@ -76,7 +76,7 @@ int main()
     return -1;
   }
 
-  pos.x = 0.0f; pos.y = 0.0f; pos.z = 6.0f;
+  pos.x = 6.0f; pos.y = 6.0f; pos.z = 6.0f;
   at.x = 0.0f; at.y = 0.0f; at.z = 0.0f;
   up.x = 0.0f; up.y = 1.0f; up.z = 0.0f;
 

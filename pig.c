@@ -32,6 +32,7 @@ pig_t *
 pig_init(puint16_t width, puint16_t height)
 {
   pig_t * p;
+  pixel_t * px;
   size_t buffer_size;
 
   if (!(p = (pig_t*)malloc(sizeof(pig_t))))
@@ -48,7 +49,10 @@ pig_init(puint16_t width, puint16_t height)
   // Initialise the framebuffer
   buffer_size = p->width * p->height * sizeof(pixel_t);
   p->fbuffer = (pixel_t*)malloc(buffer_size);
-  memset(p->fbuffer, 0, buffer_size);
+  for (px = p->fbuffer; px - p->fbuffer < p->width * p->height; ++px) {
+    px->r = px->g = px->b = px->a = 0;
+    px->depth = 1.0f;
+  }
 
   return p;
 }
@@ -113,10 +117,10 @@ pig_show(pig_t * p)
   {
     for (puint16_t j = 0; j < p->width; ++j)
     {
-      pix = p->fbuffer + (i * p->width + j);
-      row[j * 3 + 0] = pix->r * 255.0f;
-      row[j * 3 + 1] = pix->g * 255.0f;
-      row[j * 3 + 2] = pix->b * 255.0f;
+      pix = p->fbuffer + ((p->height - i - 1) * p->width + j);
+      row[j * 3 + 0] = pix->r;
+      row[j * 3 + 1] = pix->g;
+      row[j * 3 + 2] = pix->b;
     }
 
     png_write_row(png_ptr, row);
