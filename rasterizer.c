@@ -51,6 +51,27 @@ max(int a, int b)
 }
 
 /**
+ * Texture lookup
+ */
+static inline void
+texel_fetch(pig_t * p, frag_t * f, puint8_t * r, puint8_t * g, puint8_t * b)
+{
+  float u, v;
+  puint16_t x, y;
+  puint8_t * px;
+
+  u = f->u - floor(f->u);
+  v = f->v - floor(f->v);
+  x = (puint16_t)(u * p->tex_width) % p->tex_width;
+  y = (puint16_t)(v * p->tex_height) % p->tex_height;
+  px = p->tex_data + (((y * p->tex_width) + x) << 2);
+
+  *r = px[0];
+  *g = px[1];
+  *b = px[2];
+}
+
+/**
  * Emits a single fragment
  */
 static inline void
@@ -72,10 +93,24 @@ emit_fragment(pig_t * p, frag_t * f)
     return;
   }
 
+  puint8_t r, g, b;
+
+  // Lookup texture
+  if (p->mode == RM_TEXTURE)
+  {
+    texel_fetch(p, f, &r, &g, &b);
+  }
+  else
+  {
+    r = 0;
+    g = 0;
+    b = 0;
+  }
+
   // Write the fragment
-  px->r = f->r * 255.0f;
-  px->g = f->g * 255.0f;
-  px->b = f->b * 255.0f;
+  px->r = r;
+  px->g = g;
+  px->b = b;
   px->depth = f->z;
 }
 
@@ -167,11 +202,11 @@ emit_triangle(pig_t * p, frag_t * a, frag_t * b, frag_t * c)
 
         /* Interpolate attributes */
         f.z = a->z * dx + b->z * dy + c->z * dz;
+        f.u = a->u * dx + b->u * dy + c->u * dz;
+        f.v = a->v * dx + b->v * dy + c->v * dz;
         f.r = a->r * dx + b->r * dy + c->r * dz;
         f.g = a->g * dx + b->g * dy + c->g * dz;
         f.b = a->b * dx + b->b * dy + c->b * dz;
-        f.u = a->u * dx + b->u * dy + c->u * dz;
-        f.v = a->v * dx + b->v * dy + c->v * dz;
 
         /* Render the fragment */
         emit_fragment(p, &f);
@@ -214,7 +249,6 @@ transform_vertex(pig_t * p, frag_t * f, vertex_t * a)
   f->r = a->r;
   f->g = a->g;
   f->b = a->b;
-
   f->u = a->u;
   f->v = a->v;
 

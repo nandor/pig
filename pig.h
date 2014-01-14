@@ -40,17 +40,6 @@ typedef enum
   RM_PHON = (1 << 3)
 } rendermode_t;
 
-/* Texture information */
-typedef struct
-{
-  /* Width of the texture */
-  puint16_t width;
-  /* Height of the texture */
-  puint16_t height;
-  /* Texture data */
-  puint8_t * data;
-} texture_t;
-
 /* Vertex data */
 typedef struct
 {
@@ -83,8 +72,12 @@ typedef struct
   pixel_t * fbuffer;
   /* MPV matrix */
   mat m_mvp;
-  /* Current texture */
-  texture_t * tex;
+  /* Current texture data */
+  puint8_t * tex_data;
+  /* Current texture width */
+  puint16_t tex_width;
+  /* Current texture height */
+  puint16_t tex_height;
   /* Texture rendering mode */
   puint32_t mode;
 } pig_t;

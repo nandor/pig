@@ -44,7 +44,9 @@ pig_init(puint16_t width, puint16_t height)
   p->width = width;
   p->height = height;
   p->mode = RM_COLOR;
-  p->tex = NULL;
+  p->tex_data = NULL;
+  p->tex_width = 0;
+  p->tex_height = 0;
 
   // Initialise the framebuffer
   buffer_size = p->width * p->height * sizeof(pixel_t);
