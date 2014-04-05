@@ -1,4 +1,5 @@
 *.o
+build/
 pig
 *sublime*
 *.png

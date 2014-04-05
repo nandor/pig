@@ -38,13 +38,13 @@ typedef struct
   float u, v;
 } frag_t;
 
-static inline int
+static int
 min(int a, int b)
 {
   return a < b ? a : b;
 }
 
-static inline int
+static int
 max(int a, int b)
 {
   return a > b ? a : b;
@@ -53,7 +53,7 @@ max(int a, int b)
 /**
  * Texture lookup
  */
-static inline void
+static void
 texel_fetch(pig_t * p, frag_t * f, puint8_t * r, puint8_t * g, puint8_t * b)
 {
   float u, v;
@@ -74,12 +74,13 @@ texel_fetch(pig_t * p, frag_t * f, puint8_t * r, puint8_t * g, puint8_t * b)
 /**
  * Emits a single fragment
  */
-static inline void
+static void
 emit_fragment(pig_t * p, frag_t * f)
 {
   pixel_t * px;
+  puint8_t r, g, b;
 
-  // Make sure the fragment is in the viewport
+  /* Make sure the fragment is in the viewport */
   if (f->x < 0 || p->width < f->x ||
       f->y < 0 || p->height < f->y ||
       f->z < 0.0f || 1.0f < f->z)
@@ -87,15 +88,13 @@ emit_fragment(pig_t * p, frag_t * f)
     return;
   }
 
-  // Depth test
+  /* Depth test */
   px = p->fbuffer + ((f->y * p->width) + f->x);
   if (px->depth < f->z) {
     return;
   }
 
-  puint8_t r, g, b;
-
-  // Lookup texture
+  /* Lookup texture */
   if (p->mode == RM_TEXTURE)
   {
     texel_fetch(p, f, &r, &g, &b);
@@ -107,7 +106,7 @@ emit_fragment(pig_t * p, frag_t * f)
     b = 0;
   }
 
-  // Write the fragment
+  /* Write the fragment */
   px->r = r;
   px->g = g;
   px->b = b;
@@ -157,7 +156,7 @@ emit_line(pig_t * p, frag_t * p0, frag_t * p1)
   }
 }
 
-static inline int
+static int
 orient(frag_t * a, frag_t * b, frag_t * c)
 {
   return (b->x - a->x) * (c->y - a->y) - (b->y - a->y) * (c->x - a->x);
@@ -219,7 +218,7 @@ emit_triangle(pig_t * p, frag_t * a, frag_t * b, frag_t * c)
  * Computes the window-space coordinate of a vertex
  * Returns a non-zero value if the vertex is not clipped
  */
-static inline int
+static int
 transform_vertex(pig_t * p, frag_t * f, vertex_t * a)
 {
   vec x, tmp;

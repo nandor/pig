@@ -27,11 +27,9 @@ THE SOFTWARE.
 typedef unsigned char puint8_t;
 typedef unsigned short puint16_t;
 typedef unsigned int puint32_t;
-typedef unsigned long long puint64_t;
 
 typedef signed char pint8_t;
 typedef signed short pint16_t;
 typedef signed int pint32_t;
-typedef signed long long pint64_t;
 
 #endif

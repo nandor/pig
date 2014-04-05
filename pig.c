@@ -40,7 +40,7 @@ pig_init(puint16_t width, puint16_t height)
     return NULL;
   }
 
-  // Initialise settings
+  /* Initialise settings */
   p->width = width;
   p->height = height;
   p->mode = RM_COLOR;
@@ -48,7 +48,7 @@ pig_init(puint16_t width, puint16_t height)
   p->tex_width = 0;
   p->tex_height = 0;
 
-  // Initialise the framebuffer
+  /* Initialise the framebuffer */
   buffer_size = p->width * p->height * sizeof(pixel_t);
   p->fbuffer = (pixel_t*)malloc(buffer_size);
   for (px = p->fbuffer; px - p->fbuffer < p->width * p->height; ++px) {
@@ -75,7 +75,8 @@ pig_free(pig_t * p)
 void
 pig_triangle(pig_t * p, vertex_t * v, puint32_t count)
 {
-  for (puint32_t i = 0; i < count; ++i) {
+  puint32_t i;
+  for (i = 0; i < count; ++i) {
     pig_raster_triangle(p, &v[i * 3 + 0], &v[i * 3 + 1], &v[i * 3 + 2]);
   }
 }
@@ -87,6 +88,7 @@ pig_show(pig_t * p)
   png_structp png_ptr;
   png_infop info_ptr;
   png_bytep row;
+  puint16_t i, j;
   pixel_t * pix;
 
   if (!(fout = fopen("pig.png", "wb")))
@@ -115,9 +117,9 @@ pig_show(pig_t * p)
   png_write_info(png_ptr, info_ptr);
 
   row = (png_bytep)malloc(sizeof(png_byte) * p->width * 3);
-  for (puint16_t i = 0; i < p->height; ++i)
+  for (i = 0; i < p->height; ++i)
   {
-    for (puint16_t j = 0; j < p->width; ++j)
+    for (j = 0; j < p->width; ++j)
     {
       pix = p->fbuffer + ((p->height - i - 1) * p->width + j);
       row[j * 3 + 0] = pix->r;
